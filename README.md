@@ -1586,11 +1586,9 @@ converter.addConversion([&](ToyIntegerType t) -> std::optional<IntegerType> {
 
 我们用 ConversionPattern 来自动做类型转换。ConversionPattern 与 RewritePattern 不同的是，它多了一个 `Adaptor`。`Adaptor` 在前面 [InferTypeOpInterface](#类型推断infertypeopinterface) 介绍到，`Adaptor` 是只有 operands 没有 results 的中间态。
 
-MLIR 在调用 ConversionPattern 之前，会先尝试将 op 的 Operand 全部转换为目标格式，如果不能转换就保留原来的，结果会储存在 Adaptor 里面。于是，adaptor里存好了转换好的Value，我们只要把它组装成新 Op 就可以了。
+MLIR 在调用 ConversionPattern 之前，会先尝试将 op 的 Operand 全部转换为目标格式，如果不能转换就保留原来的。并且将转换之后的 operand 储存在 Adaptor 里面。
 
 在 replace 的时候，类型也可以和原来的不一样（但必须能转换过去），MLIR 会自动处理类型转换的问题。
-
-实际上，我们对 Rewrite Pattern 做很简单的修改，就可以实现一个 ConversionPattern，如下面所示：
 
 ```c++
 struct AddOpPat: OpConversionPattern<AddOp> {
