@@ -1416,10 +1416,10 @@ if(failed(applyPartialConversion(getOperation(), target, std::move(patterns))))
 
 这里我们使用了 `partialConversion`，MLIR 支持三种 Conversion 模式：
 * `partialConversion`：**如果 Pattern 转换结果是 Legal，则保留转换结果**。如果输入存在 IllegalOp 或 IllegalDialect，立刻报错。
-* `fullConversion`：**调用 Pattern 将其转换，直到全部 Legal 为止**。
+* `fullConversion`：开始时可能是Illegal的。**调用 Pattern 将其转换，直到全部 Legal 为止**。
 * `greedyPatternRewrite`：**不需要提供 Target，贪心地尝试尽量多次修改**。
 
-前两个常用于 Dialect Lowering 之中。而`geedyPatternRewrie` 很适合用来写优化，比如我可以写一个把形如 `toy.sub %a, %a` 替换为 `const 0: i32` 的 pattern，希望 MLIR 尽量多得优化它。
+前两个常用于 Dialect Lowering 之中。而`geedyPatternRewrie` 很适合用来写优化，比如我可以写一个把形如 `toy.sub %a, %a` 替换为 `const 0: i32` 的 pattern，希望 MLIR 尽量多优化它。
 
 #### Depedent Dialect & Linking
 
