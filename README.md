@@ -82,12 +82,12 @@ zhoukexing@pku.edu.cn
     * 9.2.4. [使用自己的 materialization](#使用自己的-materialization)
   * 9.3. [使用 MLIR 里已有的 Pattern 做多步转换](#使用-mlir-里已有的-pattern-做多步转换)
 * 10. [自定义 Dialect 类型](#自定义-dialect-类型)
-* 11. [MLIR 的批判：C++ v.s. Rust](#mlir-的批判：c++-v.s.-rust)
-* 12. [TIPS](#tips)
-  * 12.1. [如何找头文件、找想要的函数](#如何找头文件、找想要的函数)
-  * 12.2. [如何找需要连接的库](#如何找需要连接的库)
-  * 12.3. [如何加快编译速度](#如何加快编译速度)
-  * 12.4. [去 MLIR 里抄代码](#去-mlir-里抄代码)
+* 11. [TIPS](#tips)
+  * 11.1. [如何找头文件、找想要的函数](#如何找头文件、找想要的函数)
+  * 11.2. [如何找需要连接的库](#如何找需要连接的库)
+  * 11.3. [如何加快编译速度](#如何加快编译速度)
+  * 11.4. [去 MLIR 里抄代码](#去-mlir-里抄代码)
+* 12. [MLIR 的批判：C++ v.s. Rust](#mlir-的批判：c++-v.s.-rust)
 
 <!-- vscode-markdown-toc-config
 	numbering=true
@@ -1759,7 +1759,43 @@ void ToyDialect::registerTypes() {
 }
 ```
 
-##  11. <a name='mlir-的批判：c++-v.s.-rust'></a>MLIR 的批判：C++ v.s. Rust
+##  11. <a name='tips'></a>TIPS
+
+###  11.1. <a name='如何找头文件、找想要的函数'></a>如何找头文件、找想要的函数
+
+首先，对于常用的头文件，可以都过目一下函数列表，包括：
+
+* `llvm/ADT/*` 里面的数据结构
+* `mlir/IR/CommonAttrConstraints.td`
+* `mlir/IR/CommonTypeConstraints.td`
+
+MLIR 的 Dialect 文件结构都比较整齐，`mlir/Dialect/XXX/IR/XXX.h`
+
+其他的函数/头文件，建议开个 vscode 到 mlir 源码目录，使用全局搜索来找。
+
+###  11.2. <a name='如何找需要连接的库'></a>如何找需要连接的库
+
+首先，找到你 include 的头文件，如 `mlir/Dialect/Func/IR/FuncOps.h`。
+
+然后，找到这个头文件对应的 cpp 文件，`lib/Dialect/Func/IR/FuncOps.cpp`。
+
+从 cpp 文件逐步往上找 `CMakeLists.txt`，检查里面的 `add_mlir_dialect_library` 里的库文件名。
+
+###  11.3. <a name='如何加快编译速度'></a>如何加快编译速度
+
+MLIR 经常会连接出上百 M 甚至上 G 的文件，不同的链接器对性能有很大影响，使用 `lld` (llvm 链接器) 似乎会比 `ld` 快非常多，下面的命令可以让 CMAKE 强制使用 lld（你需要先安装 llvm 编译工具包）。
+
+```bash
+cmake .. -DCMAKE_CXX_FLAGS="-fuse-ld=lld"
+```
+
+###  11.4. <a name='去-mlir-里抄代码'></a>去 MLIR 里抄代码
+
+MLIR 为我们写好了大量的 Dialect，我们想要的功能，那些 dialect 多半都已经实现过了。
+
+可以用 `mlir-opt --help`，`mlir-opt --help-hidden` 看看有那些 dialect 哪些选项，找到可能是和自己想要做的相似的，然后过去看代码，边看边抄大概就能实现好了。
+
+##  12. <a name='mlir-的批判：c++-v.s.-rust'></a>MLIR 的批判：C++ v.s. Rust
 
 > 这一段都是我的个人想法，可能会比较偏激。
 
@@ -1782,38 +1818,7 @@ mlir 创新地把 Op 同构地看作 operand, attribute, result 的集合，具�
 * 无状态的：不需要 Interner。Interner 是为了处理大量的复制。用 Rc 来处理复制，实现专门的 Pass 来去重。
 * 控制流、数据流分离的：控制流和数据流用不同的结构来储存，可以做分离的分析，而不是存在一个指针表里面
 
-##  12. <a name='tips'></a>TIPS
 
-###  12.1. <a name='如何找头文件、找想要的函数'></a>如何找头文件、找想要的函数
+## Issue & Reply
 
-首先，对于常用的头文件，可以都过目一下函数列表，包括：
-
-* `llvm/ADT/*` 里面的数据结构
-* `mlir/IR/CommonAttrConstraints.td`
-* `mlir/IR/CommonTypeConstraints.td`
-
-MLIR 的 Dialect 文件结构都比较整齐，`mlir/Dialect/XXX/IR/XXX.h`
-
-其他的函数/头文件，建议开个 vscode 到 mlir 源码目录，使用全局搜索来找。
-
-###  12.2. <a name='如何找需要连接的库'></a>如何找需要连接的库
-
-首先，找到你 include 的头文件，如 `mlir/Dialect/Func/IR/FuncOps.h`。
-
-然后，找到这个头文件对应的 cpp 文件，`lib/Dialect/Func/IR/FuncOps.cpp`。
-
-从 cpp 文件逐步往上找 `CMakeLists.txt`，检查里面的 `add_mlir_dialect_library` 里的库文件名。
-
-###  12.3. <a name='如何加快编译速度'></a>如何加快编译速度
-
-MLIR 经常会连接出上百 M 甚至上 G 的文件，不同的链接器对性能有很大影响，使用 `lld` (llvm 链接器) 似乎会比 `ld` 快非常多，下面的命令可以让 CMAKE 强制使用 lld（你需要先安装 llvm 编译工具包）。
-
-```bash
-cmake .. -DCMAKE_CXX_FLAGS="-fuse-ld=lld"
-```
-
-###  12.4. <a name='去-mlir-里抄代码'></a>去 MLIR 里抄代码
-
-MLIR 为我们写好了大量的 Dialect，我们想要的功能，那些 dialect 多半都已经实现过了。
-
-可以用 `mlir-opt --help`，`mlir-opt --help-hidden` 看看有那些 dialect 哪些选项，找到可能是和自己想要做的相似的，然后过去看代码，边看边抄大概就能实现好了。
+本文档仅作教学，本人不负责解决使用 mlir 中遇到的任何问题。作为一个要使用 mlir 的人，应该做好遭遇玄学 bug 的觉悟。
