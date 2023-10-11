@@ -655,7 +655,7 @@ vscode 提供 mlir 扩展，可以为我们写 tablegen 文件提供帮助。在
     include "toy/ToyOps.td"
     ```
 
-    注意，要在工程根目录下的 `CMakeLists.txt` 里加上 include
+    注意，tablegen生成的文件在二进制目录，要在工程根目录下的 `CMakeLists.txt` 里加上到二进制目录的 include
     ```cmake
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
     ```
