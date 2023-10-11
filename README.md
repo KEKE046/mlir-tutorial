@@ -1480,7 +1480,7 @@ MLIR 对 Type 做改写的方法是用 `TypeConverter` 完成的， `TypeConvert
 
 #### TypeConverter
 
-首先，我们要声明一个 DialectConverter，然后我们要为其添加类型转换规则
+首先，我们要声明一个 DialectConverter，然后我们要为其添加类型转换规则。下面的代码添加了 ToyIntegerType 到 IntegerType 的转换。MLIR 会使用神奇的模板元编程的方法，获取传入函数的参数和返回值类型，来判断是什么类型到什么类型的转换。
 
 ```c++
 TypeConverter converter;
@@ -1491,7 +1491,7 @@ converter.addConversion([&](ToyIntegerType t) -> std::optional<IntegerType> {
 
 #### Conversion Pattern：自动做 Operand 的类型转换
 
-我们用 ConversionPattern 来自动做类型转换。ConversionPattern 与 RewritePattern 不同的是，它多了一个 `Adaptor`。`Adaptor` 前面 [InferTypeOpInterface](#类型推断infertypeopinterface) 介绍到，`Adaptor` 是只有 operands 没有 results 的中间态。
+我们用 ConversionPattern 来自动做类型转换。ConversionPattern 与 RewritePattern 不同的是，它多了一个 `Adaptor`。`Adaptor` 在前面 [InferTypeOpInterface](#类型推断infertypeopinterface) 介绍到，`Adaptor` 是只有 operands 没有 results 的中间态。
 
 MLIR 在调用 ConversionPattern 之前，会先尝试将 op 的 Operand 全部转换为目标格式，如果不能转换就保留原来的。并且将转换之后的 operand 储存在 Adaptor 里面。
 
