@@ -618,7 +618,7 @@ vscode 提供 mlir 扩展，可以为我们写 tablegen 文件提供帮助。在
 
 #### TableGen 文件
 
-1. `include/ToyDialect.td`：定义 Dialect 名字和cpp民命空间
+1. `include/ToyDialect.td`：定义 Dialect 名字和cpp命名空间
 
     ```tablegen
     include "mlir/IR/OpBase.td"
