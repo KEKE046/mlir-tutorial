@@ -1671,29 +1671,6 @@ void ToyDialect::registerTypes() {
 }
 ```
 
-## MLIR 的批判：C++ v.s. Rust
-
-> 这一段都是我的个人想法，可能会比较偏激。
-
-MLIR 只能用 g++ 编译，用 clang++ 编译会 Runtime Error。这充分地说明了一个事实：MLIR 这座庞大的大厦，是建立在脆弱的 ub (undefined behavior) 之上的。
-
-MLIR Context，在 rust 眼里，实际上就是一个 Interner，把类型转换为指针，来去重和加速类型比较。但而为了实现它，MLIR 使用了晦涩难懂又麻烦的 Pointer, Storage 的模式。
-
-Tablegen 可以快速地描述一段 IR，前提是去掉 debug 需要的时间。
-
-多返回值 Op 虽然增加了 IR 的表达力，但让数据流分析变得复杂。实际上，多返回值 Op 几乎不存在。但我依然不得不为罕见的部分 Op 做特判，处理多返回值的情况。
-
-另外，作为 C++ 的通病，MLIR 指针混沌得让人绝望。而更让人绝望的是，MLIR 要求任意操作过程中，IR 总是合法的。我们不能插入空指针，也不能随意删除一个变量。可以说，当你走出了 PatternRewrite 的舒适区域，想要做一些复杂的 Inline, Group, Partition 操作时，Segmentation Fault 总是与你形影不离。
-
-mlir 创新地把 Op 同构地看作 operand, attribute, result 的集合，具体的 Op 只是这个集合的解释方法。但其本质，就是定制的序列化和反序列化系统。而困惑的是，这样一个只对输入输出有用的系统，在运行过程中一直存在。为了完成这样的序列化、反序列化，mlir 创造了令人惊叹的冗余代码，巨大的二进制文件，令人困惑的函数定义，无处不在的 Segmentation Fault 陷阱，和未知的性能提升。
-
-我觉得，一个更好的 IR System 应该是：
-
-* 严格 SSA 的：所有操作都有返回值，多返回值看作 Tuple，无返回值看作空 Tuple
-* 异构Op：Op 不存在 operand, attr, result 的统一形式，而是异构的，序列化按需进行。
-* 无状态的：不需要 Interner。Interner 是为了处理大量的复制。用 Rc 来处理复制，实现专门的 Pass 来去重。
-* 控制流、数据流分离的：控制流和数据流用不同的结构来储存，可以做分离的分析，而不是存在一个指针表里面
-
 ## TIPS
 
 ### 如何找头文件、找想要的函数
@@ -1729,3 +1706,31 @@ cmake .. -DCMAKE_CXX_FLAGS="-fuse-ld=lld"
 MLIR 为我们写好了大量的 Dialect，我们想要的功能，那些 dialect 多半都已经实现过了。
 
 可以用 `mlir-opt --help`，`mlir-opt --help-hidden` 看看有那些 dialect 哪些选项，找到可能是和自己想要做的相似的，然后过去看代码，边看边抄大概就能实现好了。
+
+
+## MLIR 的批判：C++ v.s. Rust
+
+> 这一段都是我的个人想法，可能会比较偏激。
+
+MLIR 只能用 g++ 编译，用 clang++ 编译会 Runtime Error。这充分地说明了一个事实：MLIR 这座庞大的大厦，是建立在脆弱的 ub (undefined behavior) 之上的。
+
+MLIR Context，在 rust 眼里，实际上就是一个 Interner，把类型转换为指针，来去重和加速类型比较。但而为了实现它，MLIR 使用了晦涩难懂又麻烦的 Pointer, Storage 的模式。
+
+Tablegen 可以快速地描述一段 IR，前提是去掉 debug 需要的时间。
+
+多返回值 Op 虽然增加了 IR 的表达力，但让数据流分析变得复杂。实际上，多返回值 Op 几乎不存在。但我依然不得不为罕见的部分 Op 做特判，处理多返回值的情况。
+
+另外，作为 C++ 的通病，MLIR 指针混沌得让人绝望。而更让人绝望的是，MLIR 要求任意操作过程中，IR 总是合法的。我们不能插入空指针，也不能随意删除一个变量。可以说，当你走出了 PatternRewrite 的舒适区域，想要做一些复杂的 Inline, Group, Partition 操作时，Segmentation Fault 总是与你形影不离。
+
+mlir 创新地把 Op 同构地看作 operand, attribute, result 的集合，具体的 Op 只是这个集合的解释方法。但其本质，就是定制的序列化和反序列化系统。而困惑的是，这样一个只对输入输出有用的系统，在运行过程中一直存在。为了完成这样的序列化、反序列化，mlir 创造了令人惊叹的冗余代码，巨大的二进制文件，令人困惑的函数定义，无处不在的 Segmentation Fault 陷阱，和未知的性能提升。
+
+我觉得，一个更好的 IR System 应该是：
+
+* 严格 SSA 的：所有操作都有返回值，多返回值看作 Tuple，无返回值看作空 Tuple
+* 异构Op：Op 不存在 operand, attr, result 的统一形式，而是异构的，序列化按需进行。
+* 无状态的：不需要 Interner。Interner 是为了处理大量的复制。用 Rc 来处理复制，实现专门的 Pass 来去重。
+* 控制流、数据流分离的：控制流和数据流用不同的结构来储存，可以做分离的分析，而不是存在一个指针表里面
+
+## Issue & Reply
+
+这篇文章仅作教学，我不会负责解答 mlir 使用过程中的所有问题。作为一个要使用 mlir 的人，你应该做好遇到无人理解的玄学 bug 的觉悟。
