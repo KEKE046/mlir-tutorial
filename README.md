@@ -2,6 +2,8 @@
 
 Kexing Zhou（周可行）
 
+北京大学
+
 zhoukexing@pku.edu.cn
 
 <!-- vscode-markdown-toc -->
@@ -1469,6 +1471,10 @@ struct DCEPass : toy::impl::DCEBase<DCEPass> {
 ##  9. <a name='pattern-rewrite'></a>Pattern Rewrite
 
 pattern rewrite 是 MLIR 的一大特色。Pattern 会匹配 IR 的一个子图，然后将其更改为新的格式。MLIR 会为我们自动调度 pattern，让 IR 的变换更加简单。
+
+很多 IR 的操作都可以看作是 Pattern Rewrite：
+* 算术优化，如 x*2 优化为 x+x ，可以看作是对表达式做模式替换
+* 表达式 Lowering，可以看作是把 HighLevel Op 替换为 LowLevel Op
 
 在这一节，我们使用 Pattern Rewrite 来把 toy 里的 Op 转换为 Arith 里的 Op。
 
