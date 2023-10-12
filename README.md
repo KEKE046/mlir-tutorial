@@ -101,7 +101,7 @@ zhoukexing@pku.edu.cn
 
 ###  1.1. <a name='mlir-编译管线'></a>MLIR 编译管线
 
-MLIR 在于设计一套可复用的编译管线，包括可复用的 IR、Pass 和 IO 系统。在 IR 中，多个 Dialect 可以混合存在。MLIR 已经定义好了一套 Dialect Translation Graph：。
+MLIR 在于设计一套可复用的编译管线，包括可复用的 IR、Pass 和 IO 系统。在 IR 中，多个 Dialect 可以混合存在。MLIR 已经定义好了一套 Dialect Translation Graph：
 
 ![](fig/MLIR%20Dialects.jpg)
 
@@ -182,7 +182,7 @@ func.func @foo(%arg0: memref<16x64xf64>, %arg1: memref<16x64xf64>) -> memref<16x
 **可见，MLIR 编译有一个特点**：不同 dialect 是独立的。
 
 * 例如，在做循环展开等优化的时候，我不需要关心加法和减法可以合并；而在做算数表达式优化的时候，也不需要关心当前在哪个函数里边。
-* 在我们利用 mlir 写新项目的时候，往往可以利用已有的 **arith** 等 dialect 用来表示运算。
+<!-- * 在我们利用 mlir 写新项目的时候，往往可以利用已有的 **arith** 等 dialect 用来表示运算。 -->
 
 **MLIR 可以从各个层次优化 IR**：例如：
 
@@ -200,7 +200,7 @@ MLIR 的 insight 在于“**及时做优化**”。很明显，linalg 层次，�
     * 如 Polygeist 能把 C 翻译成 Affine Dialect，这样我们就不用写 C Parser
 * 将已有 dialect **混入**或**作为输出**。
     * 如 arith 等 dialect，可以直接集成起来，不需要自己写。
-    * 如生成 LLVM Dialect，这样就可以直接调用 LLVM 编译代码
+    * 要生成 binary 的时候，可以直接生成 LLVM Dialect，复用后端 LLVM 编译管线
 * 复用已有的 Pass。
     * 常见的 Pass 如 CSE，DCE 可以复用
     * Dialect 专用 Pass，如循环展开，也可以复用
@@ -210,6 +210,7 @@ MLIR 的 insight 在于“**及时做优化**”。很明显，linalg 层次，�
 MLIR 也有缺点：
 
 * 太过笨重，编译、链接时间长（可能会连接出上百M的文件）
+  * 可以用 lld 来加快链接速度，但依然很慢 [见TIPS](#113-如何加快编译速度)
 * Dialect 定义极不灵活，定义较复杂 Op 时非常麻烦
 
 ##  2. <a name='mlir-基本用法'></a>MLIR 基本用法
@@ -900,7 +901,7 @@ def ConstantOp : ToyOp<"const", [Pure]> {
 
 ####  7.1.3. <a name='为什么-attribute-和-type-都是-constraint'></a>为什么 Attribute 和 Type 都是 Constraint
 
-为 Op 定义一个 Attribute 的时候，实际上是指定了 [Operation](#op-的类型转换) 里面 operands, results, attributes 等等 的解释方式。
+为 Op 定义一个 Attribute 的时候，实际上是指定了 [Operation](#41-op-的类型转换) 里面 operands, results, attributes 等等 的解释方式。
 
 像 Attribute、Type 这样的 表示了 “第 i 个位置的 operand 只能被解释为整数”、“第 j 个位置的 attr 只能被解释为Symbol” 的约定，算是限制了各个 field 的解释方式，被看作是 “Constraint”。
 
@@ -1052,7 +1053,7 @@ build(
 
 有时候，一些常用的 Attr，如 `StringAttr`，MLIR 会自动生成以 `StringRef` 为参数的 builder，用来方便调用。用户就不需要使用 `builder.getStringAttr(xxx)` 先把 `StringRef` 转换为 `StringAttr` 再来传参数了。
 
-[之前](#内置-attribute) 提到的 `I64SmallVectorArrayAttr` 就可以直接传一个 `SmallVector<int64_t>`，而不需要传一个 Attr 进去，会非常方便。
+[之前](#711-内置-attribute) 提到的 `I64SmallVectorArrayAttr` 就可以直接传一个 `SmallVector<int64_t>`，而不需要传一个 Attr 进去，会非常方便。
 
 ####  7.5.2. <a name='自定义builder'></a>自定义builder
 
@@ -1076,7 +1077,7 @@ def SubOp : ToyOp<"sub", [Pure]> {
 * 首先，mlir 会自动为我们生成 `build($_builder, $_state, ResultType, LhsValue, RhsValue)` 的 builder
 * 我们的 builder 通过 `lhs.getType()` 推断 result 的类型，并调用 mlir 生成好的 builder，实现自动推断类型
 
-如果只是为了推断类型，建议使用 MLIR 为类型推断专门实现的 Trait: InferTypeOpInterface [后面有介绍](#类型推断infertypeopinterface)。
+如果只是为了推断类型，建议使用 MLIR 为类型推断专门实现的 Trait: InferTypeOpInterface [后面有介绍](#772-类型推断infertypeopinterface)。
 
 ###  7.6. <a name='自定义函数'></a>自定义函数
 
@@ -1119,7 +1120,7 @@ add_custom_target(header DEPENDS MLIRToyIncGen)
 
 ###  7.7. <a name='使用-trait'></a>使用 Trait
 
-[前面](#程序入口) 介绍到，在给 Op 标记上 `Pure` 之后，就会自动被 cse, dce Pass 理解。除了 Pure Trait 之外，MLIR 为我们提供了很多好用的 Trait，这里介绍常用的 SideEffect，InferType 和 比较复杂的和函数相关的 Trait。
+[前面](#634-程序入口) 介绍到，在给 Op 标记上 `Pure` 之后，就会自动被 cse, dce Pass 理解。除了 Pure Trait 之外，MLIR 为我们提供了很多好用的 Trait，这里介绍常用的 SideEffect，InferType 和 比较复杂的和函数相关的 Trait。
 
 使用 Trait 的时候要注意：
 
@@ -1567,7 +1568,7 @@ MLIR 对 Type 做改写的方法是用 `TypeConverter` 完成的， `TypeConvert
 
 这三个里面最重要的是 1，剩下两个一般不需要自己实现。
 
-为了做示范，我们定义一个自己的 `toy.int` 类型，它可以被转换为 `Integer` 类型。这里略过类型定义的部分，详细请看 [自定义类型](#自定义类型)。
+为了做示范，我们定义一个自己的 `toy.int` 类型，它可以被转换为 `Integer` 类型。这里略过类型定义的部分，详细请看 [自定义类型](#10-自定义-type)。
 
 ####  9.2.1. <a name='typeconverter'></a>TypeConverter
 
@@ -1582,7 +1583,7 @@ converter.addConversion([&](ToyIntegerType t) -> std::optional<IntegerType> {
 
 ####  9.2.2. <a name='conversion-pattern：自动做-operand-的类型转换'></a>Conversion Pattern：自动做 Operand 的类型转换
 
-我们用 ConversionPattern 来自动做类型转换。ConversionPattern 与 RewritePattern 不同的是，它多了一个 `Adaptor`。`Adaptor` 在前面 [InferTypeOpInterface](#类型推断infertypeopinterface) 介绍到，`Adaptor` 是只有 operands 没有 results 的中间态。
+我们用 ConversionPattern 来自动做类型转换。ConversionPattern 与 RewritePattern 不同的是，它多了一个 `Adaptor`。`Adaptor` 在前面 [InferTypeOpInterface](#772-类型推断infertypeopinterface) 介绍到，`Adaptor` 是只有 operands 没有 results 的中间态。
 
 MLIR 在调用 ConversionPattern 之前，会先尝试将 op 的 Operand 全部转换为目标格式，如果不能转换就保留原来的。并且将转换之后的 operand 储存在 Adaptor 里面。
 
