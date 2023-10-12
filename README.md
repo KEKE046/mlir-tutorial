@@ -81,7 +81,7 @@ zhoukexing@pku.edu.cn
     * 9.2.3. [类型转换的细节与 Debug](#类型转换的细节与-debug)
     * 9.2.4. [使用自己的 materialization](#使用自己的-materialization)
   * 9.3. [使用 MLIR 里已有的 Pattern 做多步转换](#使用-mlir-里已有的-pattern-做多步转换)
-* 10. [自定义 Dialect 类型](#自定义-dialect-类型)
+* 10. [自定义 Type](#自定义-type)
 * 11. [TIPS](#tips)
   * 11.1. [如何找头文件、找想要的函数](#如何找头文件、找想要的函数)
   * 11.2. [如何找需要连接的库](#如何找需要连接的库)
@@ -1709,7 +1709,7 @@ if(failed(applyPartialConversion(getOperation(), target, std::move(patterns))))
 
 其他头文件，需要连接的库文件，请看 `ex6` 里的代码。
 
-##  10. <a name='自定义-dialect-类型'></a>自定义 Dialect 类型
+##  10. <a name='自定义-type'></a>自定义 Type
 
 参考 `ex7`，自定义类型的方法：
 
@@ -1810,7 +1810,7 @@ Tablegen 可以快速地描述一段 IR，前提是去掉 debug 需要的时间�
 
 另外，作为 C++ 的通病，MLIR 指针混沌得让人绝望。而更让人绝望的是，MLIR 要求任意操作过程中，IR 总是合法的。我们不能插入空指针，也不能随意删除一个变量。可以说，当你走出了 PatternRewrite 的舒适区域，想要做一些复杂的 Inline, Group, Partition 操作时，Segmentation Fault 总是与你形影不离。
 
-mlir 创新地把 Op 同构地看作 operand, attribute, result 的集合，具体的 Op 只是这个集合的解释方法。但其本质，就是定制的序列化和反序列化系统。而困惑的是，这样一个只对输入输出有用的系统，在运行过程中一直存在。为了完成这样的序列化、反序列化，mlir 创造了令人惊叹的冗余代码，巨大的二进制文件，令人困惑的函数定义，无处不在的 Segmentation Fault 陷阱，和未知的性能提升。
+mlir 创新地把 Op 同构地看作 operand, attribute, result 的集合，具体的 Op 只是这个集合的解释方法。但其本质，就是定制的序列化和反序列化系统。而困惑的是，这样一个输入输出系统，在运行过程中一直存在，我们随时都在反序列化 Op 来获取 operand，更新 operand 之后又序列化到通用表示上。为了完成这样的序列化、反序列化，mlir 创造了令人惊叹的冗余代码，巨大的二进制文件，令人困惑的函数定义，无处不在的 Segmentation Fault 陷阱，和未知的性能提升。
 
 我觉得，一个更好的 IR System 应该是：
 
@@ -1818,7 +1818,6 @@ mlir 创新地把 Op 同构地看作 operand, attribute, result 的集合，具�
 * 异构Op：Op 不存在 operand, attr, result 的统一形式，而是异构的，序列化按需进行。
 * 无状态的：不需要 Interner。Interner 是为了处理大量的复制。用 Rc 来处理复制，实现专门的 Pass 来去重。
 * 控制流、数据流分离的：控制流和数据流用不同的结构来储存，可以做分离的分析，而不是存在一个指针表里面
-
 
 ##  13. <a name='issue-&-reply'></a>Issue & Reply
 
