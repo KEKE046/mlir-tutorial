@@ -115,7 +115,7 @@ MLIR 的 Dialect 是相对独立的，下面列举一些常见的 dialect：
 2. **arith**：处理加减乘除移位等各种运算
     * **math**：更复杂的运算，如 log, exp, tan 等
 3. **affine**：处理循环嵌套，实现了循环展开、多面体变换等一些算法
-4. **scf**：(standard control flow) 结构化控制流，保留 for，if 等语句
+4. **scf**：(structured control flow) 结构化控制流，保留 for，if 等语句
     * **cf**：无结构控制流，只有条件跳转命令
 5. **llvm**：LLVM IR 的 binding，可以直接翻译给 LLVM 做后续编译
 
